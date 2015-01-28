@@ -2,9 +2,7 @@ __author__ = 'ilendemli'
 
 import sys
 import random
-
 import ctypes
-MessageBox = ctypes.windll.user32.MessageBoxW
 
 from PyQt5 import uic
 from PyQt5.QtGui import QColor
@@ -12,6 +10,7 @@ from PyQt5.QtWidgets import (QMainWindow, QApplication, QTableWidgetItem)
 
 ui_class, base_class = uic.loadUiType("Nonogram.ui")
 
+MessageBox = ctypes.windll.user32.MessageBoxW
 
 class LG():
     @staticmethod
@@ -86,6 +85,10 @@ class Nonogramm(QMainWindow):
     clicked = None
     valid_fields = None
 
+    red = 255
+    green = 255
+    blue = 255
+
     def __init__(self, parent=None):
         QMainWindow.__init__(self, parent)
         self.ui = ui_class()
@@ -95,6 +98,24 @@ class Nonogramm(QMainWindow):
         self.ui.button_newgame.clicked.connect(self.handlenewgame)
         self.ui.button_solution.clicked.connect(self.handlesolution)
         self.ui.combo_stage.activated.connect(self.handlestage)
+
+        self.ui.slider_red.valueChanged.connect(self.handleSlider)
+        self.ui.slider_green.valueChanged.connect(self.handleSlider)
+        self.ui.slider_blue.valueChanged.connect(self.handleSlider)
+
+    def handleSlider(self):
+        sender = self.sender()
+
+        if sender == self.ui.slider_red:
+            self.red = self.ui.slider_red.value()
+
+        elif sender == self.ui.slider_green:
+            self.green = self.ui.slider_green.value()
+
+        elif sender == self.ui.slider_blue:
+            self.blue = self.ui.slider_blue.value()
+
+        self.setStyleSheet("background-color: rgb(%i, %i, %i);" % (self.red, self.green, self.blue))
 
     def handlespot(self):
         table = self.ui.table_game
@@ -164,9 +185,9 @@ class Nonogramm(QMainWindow):
         table_game.setColumnCount(15)
 
         table_hor.setRowCount(15)
-        table_hor.setColumnCount(7)
+        table_hor.setColumnCount(8)
 
-        table_ver.setRowCount(7)
+        table_ver.setRowCount(8)
         table_ver.setColumnCount(15)
 
         for row in range(len(self.game)):
@@ -196,7 +217,7 @@ class Nonogramm(QMainWindow):
                 titem.setTextAlignment(0x0004 | 0x0080)
                 titem.setText("%i" % list_ver_column[column])
 
-                table_ver.setItem(7 - list_col_length + column, row, titem)
+                table_ver.setItem(8 - list_col_length + column, row, titem)
 
         table_game.setEnabled(True)
 
