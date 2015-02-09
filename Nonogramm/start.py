@@ -1,83 +1,15 @@
 __author__ = 'ilendemli'
 
 import sys
-import random
 import ctypes
 
-from PyQt5 import uic
-from PyQt5.QtGui import QColor
+from model import GUIModel
+from view import CTableWidgetItem
+from controller import (LG, TG)
+
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QTableWidgetItem)
 
-ui_class, base_class = uic.loadUiType("Nonogram.ui")
-
 MessageBox = ctypes.windll.user32.MessageBoxW
-
-class LG():
-    @staticmethod
-    def calculate_list(tl):
-        tlist = []
-
-        for i in range(len(tl)):
-            tcount = 0
-            trow = tl[i]
-            tocc = []
-
-            for j in range(len(trow)):
-                if trow[j] == 1:
-                    tcount += 1
-
-                elif trow[j] == 0 and tcount != 0:
-                    tocc.append(tcount)
-                    tcount = 0
-
-            if tcount != 0:
-                tocc.append(tcount)
-
-            tlist.append(tocc)
-
-        return tlist
-
-    @staticmethod
-    def rotate_list(tl):
-        tlist = []
-
-        for i in range(len(tl)):
-            trow = []
-
-            for j in range(len(tl[i])):
-                trow.append(tl[j][i])
-
-            tlist.append(trow)
-
-        return tlist
-
-
-class CTableWidgetItem(QTableWidgetItem):
-    marked = False
-
-    def __init__(self, row, column):
-        QTableWidgetItem.__init__(self)
-
-        self.row = row
-        self.column = column
-
-    def toggle(self):
-        if self.marked:
-            self.marked = False
-        else:
-            self.marked = True
-
-        self.refresh()
-
-    def refresh(self):
-        if self.marked:
-            self.setBackground(QColor(100, 100, 150))
-        else:
-            self.setBackground(QColor(255, 255, 255))
-
-    def setmarked(self, marked):
-        self.marked = marked
-        self.refresh()
 
 
 class Nonogramm(QMainWindow):
@@ -89,21 +21,22 @@ class Nonogramm(QMainWindow):
     green = 255
     blue = 255
 
-    def __init__(self, parent=None):
-        QMainWindow.__init__(self, parent)
-        self.ui = ui_class()
-        self.ui.setupUi(self)
+    def __init__(self):
+        QMainWindow.__init__(self, parent=None)
+
+        self.ui = GUIModel.create(self)
 
         self.ui.table_game.clicked.connect(self.handlespot)
         self.ui.button_newgame.clicked.connect(self.handlenewgame)
         self.ui.button_solution.clicked.connect(self.handlesolution)
         self.ui.combo_stage.activated.connect(self.handlestage)
 
-        self.ui.slider_red.valueChanged.connect(self.handleSlider)
-        self.ui.slider_green.valueChanged.connect(self.handleSlider)
-        self.ui.slider_blue.valueChanged.connect(self.handleSlider)
+        self.ui.slider_red.valueChanged.connect(self.handleslider)
+        self.ui.slider_green.valueChanged.connect(self.handleslider)
+        self.ui.slider_blue.valueChanged.connect(self.handleslider)
 
-    def handleSlider(self):
+
+    def handleslider(self):
         sender = self.sender()
 
         if sender == self.ui.slider_red:
@@ -118,12 +51,12 @@ class Nonogramm(QMainWindow):
         self.setStyleSheet("background-color: rgb(%i, %i, %i);" % (self.red, self.green, self.blue))
 
     def handlespot(self):
-        table = self.ui.table_game
+        table_game = self.ui.table_game
 
-        row = table.currentRow()
-        column = table.currentColumn()
+        row = table_game.currentRow()
+        column = table_game.currentColumn()
 
-        titem = table.item(row, column)
+        titem = table_game.item(row, column)
         titem.toggle()
 
         if self.clicked[row][column] == 1:
@@ -148,6 +81,8 @@ class Nonogramm(QMainWindow):
         titem.setSelected(False)
 
         if ((self.valid_fields - offset) == 0) and error == 0:
+            self.game = None
+            table_game.setEnabled(False)
             MessageBox(None, "Herzlichen glückwunsch!\nSie haben das Spiel geschafft!", "Nonogram", 0x40 | 0x0)
 
     def handlenewgame(self):
@@ -172,23 +107,7 @@ class Nonogramm(QMainWindow):
         table_hor = self.ui.table_hor
         table_ver = self.ui.table_ver
 
-        table_game.setRowCount(0)
-        table_game.setColumnCount(0)
-
-        table_hor.setRowCount(0)
-        table_hor.setColumnCount(0)
-
-        table_ver.setRowCount(0)
-        table_ver.setColumnCount(0)
-
-        table_game.setRowCount(15)
-        table_game.setColumnCount(15)
-
-        table_hor.setRowCount(15)
-        table_hor.setColumnCount(8)
-
-        table_ver.setRowCount(8)
-        table_ver.setColumnCount(15)
+        TG.recreate_tables(table_game, table_hor, table_ver)
 
         for row in range(len(self.game)):
             list_game_column = self.game[row]
@@ -222,54 +141,35 @@ class Nonogramm(QMainWindow):
         table_game.setEnabled(True)
 
     def handlesolution(self):
-        table = self.ui.table_game
+        if self.game:
+            table_game = self.ui.table_game
 
-        for row in range(15):
-            for column in range(15):
-                titem = table.item(row, column)
+            for row in range(15):
+                for column in range(15):
+                    titem = table_game.item(row, column)
 
-                if self.game[row][column] == 1:
-                    titem.setmarked(True)
-                else:
-                    titem.setmarked(False)
+                    if self.game[row][column] == 1:
+                        titem.setmarked(True)
+                    else:
+                        titem.setmarked(False)
 
-        table.setEnabled(False)
+            table_game.setEnabled(False)
 
-        self.ui.label_left.setText("0")
-        self.ui.label_wrong.setText("0")
+            self.ui.label_left.setText("0")
+            self.ui.label_wrong.setText("0")
+
+            self.game = None
+
+        else:
+            MessageBox(None, "Es wurde kein Spiel gestartet!", "Nonogram", 0x40 | 0x0)
 
     def handlestage(self):
         index = self.ui.combo_stage.currentIndex()
 
-        amount = 200
-
-        if index == 1:
-            amount = 150
-
-        elif index == 2:
-            amount = 125
-
-        elif index == 3:
-            amount = 90
-
-        elif index == 4:
-            amount = 50
-
-        self.game = [[0 for _ in range(15)] for _ in range(15)]
-
-        count = 0
-
-        while count != amount:
-            x = random.randint(0, 14)
-            y = random.randint(0, 14)
-
-            if self.game[x][y] == 0:
-                self.game[x][y] = 1
-                count += 1
+        self.game = LG.create_new_game(index)
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     nono = Nonogramm()
-
     nono.show()
     sys.exit(app.exec_())

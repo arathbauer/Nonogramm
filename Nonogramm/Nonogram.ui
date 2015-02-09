@@ -231,6 +231,9 @@
    <property name="layoutDirection">
     <enum>Qt::LeftToRight</enum>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background-color: white;</string>
+   </property>
    <property name="frameShape">
     <enum>QFrame::Box</enum>
    </property>
